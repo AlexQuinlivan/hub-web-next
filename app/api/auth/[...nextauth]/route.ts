@@ -29,6 +29,7 @@ const authOptions: NextAuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET as string,
   callbacks: {
+    // @ts-ignore
     async jwt({token, trigger, account, user}) {
       if (account) {
         console.log("new account/sign in, updating jwt")
