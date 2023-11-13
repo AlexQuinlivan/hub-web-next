@@ -1,14 +1,20 @@
+"use client";
+import {useSession} from "next-auth/react";
 import Image from 'next/image'
+import Link from "next/link";
 import styles from './page.module.css'
 
 export default function Home() {
+  const session = useSession()
+
   return (
     <main className={styles.main}>
+
       <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
+        <p style={{
+          width: "500px",
+          whiteSpace: "pre-line"
+        }}>{JSON.stringify(session.data, null, 2)}</p>
         <div>
           <a
             href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
@@ -38,6 +44,13 @@ export default function Home() {
           priority
         />
       </div>
+
+      <Link href="https://localhost:3000/api/auth/signin">
+        <button>
+          sign in
+
+        </button>
+      </Link>
 
       <div className={styles.grid}>
         <a
