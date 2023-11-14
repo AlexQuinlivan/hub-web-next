@@ -32,7 +32,9 @@ export default function Home() {
       }
 
       const intervalId = setInterval(async () => {
-        await fetchMe()
+        if (session.status == "authenticated") {
+          await fetchMe()
+        }
       }, 1000 * 5) // in milliseconds
       return () => clearInterval(intervalId)
     }, [session])
