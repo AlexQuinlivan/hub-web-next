@@ -45,7 +45,7 @@ export default function Home() {
         />
       </div>
 
-      <Link href="https://localhost:3000/api/auth/signin">
+      <Link href={`${process.env.NEXTAUTH_URL}/api/auth/signin`}>
         <button>
           sign in
 
