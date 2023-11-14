@@ -17,11 +17,18 @@ export async function middleware(request: NextRequest) {
       })
     }
 
-    return NextResponse.next({
-      headers: {
-        "Authorization": `Bearer ${session.access_token}`
-      }
-    })
+    const headers = new Headers(request.headers)
+    headers.set("Authorization", `Bearer ${session.access_token}`)
+    headers.set("X-Application-Id", "sp-hub-web")
+    request.nextUrl.href = `${process.env.STORYPARK_API_V3_BASE_URL}${pathname.replace("/api/v3", "")}`
+
+    return NextResponse.rewrite(
+      request.nextUrl,
+      {
+        request: {
+          headers: headers
+        }
+      })
   }
 
   // Just continue without mutation
