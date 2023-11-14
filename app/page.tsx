@@ -1,7 +1,5 @@
 "use client";
 import {signIn, useSession} from "next-auth/react";
-import Image from 'next/image'
-import Link from "next/link";
 import {useEffect, useState} from "react";
 import styles from './page.module.css'
 
@@ -12,7 +10,7 @@ async function authedFetch(
   const response = await fetch(input, init)
   if (response.status == 401) {
     const sessionResponse = await fetch("/api/auth/session?force_refresh=true")
-    if (sessionResponse.status >= 400 || sessionResponse.status <= 499) {
+    if (sessionResponse.status >= 400 && sessionResponse.status <= 499) {
       // todo(alex): do signout
       throw "AuthError"
     }
@@ -82,12 +80,12 @@ export default function Home() {
         </p>
       </div>
 
-        <button style={{
-          padding: "6px 10px 6px 10px"
-        }} onClick={() => signIn(process.env.NEXT_PUBLIC_STORYPARK_OIDC_PROVIDER_ID)}>
-          sign in
+      <button style={{
+        padding: "6px 10px 6px 10px"
+      }} onClick={() => signIn(process.env.NEXT_PUBLIC_STORYPARK_OIDC_PROVIDER_ID)}>
+        sign in
 
-        </button>
+      </button>
     </main>
   )
 }
