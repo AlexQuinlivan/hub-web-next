@@ -1,4 +1,7 @@
+// noinspection JSUnusedGlobalSymbols
+
 import NextAuth, {Account, NextAuthOptions} from 'next-auth';
+import {NextRequest} from "next/server";
 
 /** This is the Storypark OIDC provider configuration that will be used by nextauth */
 const StoryparkProvider = {
@@ -14,7 +17,7 @@ const StoryparkProvider = {
     }
   },
   idToken: true,
-  checks: ["pkce", "state"],
+  checks: ["pkce", "state", "nonce"],
   profile(profile: any) {
     return {
       id: profile.sub,
@@ -23,83 +26,83 @@ const StoryparkProvider = {
     }
   }
 }
-const authOptions: NextAuthOptions = {
-  providers: [
-    StoryparkProvider as any,
-  ],
-  secret: process.env.NEXTAUTH_SECRET as string,
-  callbacks: {
-    // @ts-ignore
-    async jwt({token, trigger, account, user}) {
-      if (account) {
-        console.log("new account/sign in, updating jwt")
 
-        // This is a new "account" most likely triggered by a sign in of some sort
-        assertValidAccountCredentials(account)
+// @ts-ignore
+const auth = async (req: NextRequest, res: RouteHandlerContext) => {
+  // The client has requested that we perform a credential rotation, it knows
+  // something more than we do, so let's respect that, log it and perform
+  // what it wants
+  const clientForcedRefresh = req.nextUrl.searchParams.has("force_refresh")
+  if (clientForcedRefresh) {
+    console.log("reached auth with a client forced refresh")
+  }
 
-        // ???(alex): does it matter that we're not validating expiration here? probably not as
-        //   if they are expired then the client will request an update first anyway.
+  const authOptions: NextAuthOptions = {
+    providers: [
+      StoryparkProvider as any,
+    ],
+    secret: process.env.NEXTAUTH_SECRET as string,
+    callbacks: {
+      // @ts-ignore
+      async jwt({token, account}) {
+        if (account) {
+          console.log("new account/sign in, updating jwt")
 
-        return {
-          access_token: account.access_token,
-          id_token: account.id_token,
-          refresh_token: account.refresh_token,
-          expires_at: account.expires_at,
-        }
-      } else if (Date.now() < token.expires_at * 1000) {
-        // If the access token has not expired yet, return it
-        console.log("returning access token as still valid")
-        return token
-      } else {
-        // If the token has expired, try to refresh it
-        console.log("token has expired, attempting to refresh")
-        try {
-          const tokens = await refreshTokens(token.refresh_token)
-          assertValidRefreshCredentials(tokens)
+          // This is a new "account" most likely triggered by a sign in of some sort
+          assertValidAccountCredentials(account)
+
+          // ???(alex): does it matter that we're not validating expiration here? probably not as
+          //   if they are expired then the client will request an update first anyway.
 
           return {
-            // keep previous values, but update with token response
-            ...token,
-            access_token: tokens.access_token,
-            id_token: tokens.id_token,
-            refresh_token: tokens.refresh_token,
-            expires_at: tokens.created_at + tokens.expires_in,
+            access_token: account.access_token,
+            id_token: account.id_token,
+            refresh_token: account.refresh_token,
+            expires_at: account.expires_at,
           }
+        } else if (Date.now() < token.expires_at * 1000) {
+          // If the access token has not expired yet, return it
+          console.log("returning access token as still valid")
+          return token
+        } else {
+          // If the token has expired, try to refresh it
+          console.log("token has expired, attempting to refresh")
+          try {
+            const tokens = await refreshTokens(token.refresh_token)
+            assertValidRefreshCredentials(tokens)
 
-        } catch (e) {
-          if (e instanceof Response
-            && e.status >= 400
-            && e.status <= 499) {
-            console.log(`encountered unrecoverable error (status: ${e.status})`)
-            throw "RefreshTokenError"
-          } else {
-            console.log(`encountered recoverable error, try again (err: ${e})`)
+            return {
+              // keep previous values, but update with token response
+              ...token,
+              access_token: tokens.access_token,
+              id_token: tokens.id_token,
+              refresh_token: tokens.refresh_token,
+              expires_at: tokens.created_at + tokens.expires_in,
+            }
+
+          } catch (e) {
+            if (e instanceof Response
+              && e.status >= 400
+              && e.status <= 499) {
+              console.log(`encountered unrecoverable error (status: ${e.status})`)
+              throw "RefreshTokenError"
+            } else {
+              console.log(`encountered recoverable error, try again (err: ${e})`)
+            }
           }
         }
       }
-    },
-    async session({session, token, user}) {
-      // Yes, forgive me for the TS disaster that this file is. Trying to get it to be more TS compatible
-      // is a thing that auth.js is attempting to solve come v5
-
-      // Send properties to the client, like an access_token and user id from a provider.
-      if (token.error) {
-        // @ts-ignore
-        session.error = token.error
-      } else {
-        // @ts-ignore
-        session.access_token = token.access_token
-        // @ts-ignore
-        session.id_token = token.id_token
-        // @ts-ignore
-        session.expires_at = token.expires_at
-        // @ts-ignore
-        session.error = null
-      }
-      return session
     }
-  }
+  };
+  return await NextAuth(req, res, authOptions);
 };
+
+// noinspection JSUnusedGlobalSymbols
+export {
+  auth as GET,
+  auth as POST,
+};
+
 
 /**
  * With a given user's refresh_token, attempt to fetch a new token tuple
@@ -130,12 +133,6 @@ const refreshTokens = async (refresh_token: string): Promise<RefreshCredentials>
   return tokens
 }
 
-// Export the handler for the known accepted routes
-const handler = NextAuth(authOptions);
-// noinspection JSUnusedGlobalSymbols
-export {handler as GET, handler as POST};
-
-
 // - Types
 
 type RefreshCredentials = {
@@ -148,17 +145,11 @@ type RefreshCredentials = {
 declare module "next-auth/jwt" {
   type AuthError = "AuthErrorIncompleteCredentials" | "RefreshTokenError"
 
+  // noinspection JSUnusedGlobalSymbols
   interface JWT {
     access_token: string,
     id_token: string,
     refresh_token: string
-    expires_at: number
-    error?: AuthError
-  }
-
-  interface Session {
-    access_token: string,
-    id_token: string,
     expires_at: number
     error?: AuthError
   }
