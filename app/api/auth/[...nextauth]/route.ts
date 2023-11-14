@@ -5,7 +5,7 @@ import {NextRequest} from "next/server";
 
 /** This is the Storypark OIDC provider configuration that will be used by nextauth */
 const StoryparkProvider = {
-  id: process.env.STORYPARK_OIDC_PROVIDER_ID,
+  id: process.env.NEXT_PUBLIC_STORYPARK_OIDC_PROVIDER_ID,
   name: "Storypark",
   type: "oauth",
   clientId: process.env.STORYPARK_OIDC_CLIENT_ID,
