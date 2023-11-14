@@ -2,15 +2,50 @@
 import {useSession} from "next-auth/react";
 import Image from 'next/image'
 import Link from "next/link";
+import {useEffect, useState} from "react";
 import styles from './page.module.css'
 
 export default function Home() {
+  const [userState, setUserState] = useState({user: null})
   const session = useSession()
+
+    useEffect(() => {
+      async function fetchMe() {
+        try {
+          const response = await fetch("/api/v3/users/me", {
+            headers: {
+              "Accept": "application/json",
+              // @ts-ignore
+              "Authorization": `Bearer ${session.data!.access_token as string}`
+            },
+          })
+
+          if (response.ok) {
+            setUserState({ user: (await response.json()).user })
+          } else {
+            setUserState({ user: null })
+            console.log(`Response not ok ${response.status}`)
+          }
+        } catch (e) {
+          // Logout the user and redirect to the login page
+        }
+      }
+
+      const intervalId = setInterval(async () => {
+        await fetchMe()
+      }, 1000 * 5) // in milliseconds
+      return () => clearInterval(intervalId)
+    }, [session])
 
   return (
     <main className={styles.main}>
 
       <div className={styles.description}>
+        <p style={{
+          width: "500px",
+          whiteSpace: "pre-line"
+        }}>{JSON.stringify(userState, null, 2).split("\n").slice(0, 15).join("\n")}</p>
+
         <p style={{
           width: "500px",
           whiteSpace: "pre-line"
