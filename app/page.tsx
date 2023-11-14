@@ -45,7 +45,9 @@ export default function Home() {
         />
       </div>
 
-      <Link href={`${process.env.NEXTAUTH_URL}/api/auth/signin`}>
+      <Link href={{
+        pathname: "/api/auth/signin"
+      }}>
         <button>
           sign in
 
