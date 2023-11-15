@@ -1,4 +1,5 @@
 import AuthProvider from "@/app/AuthProvider";
+import ReflectMetadataClientComponent from "@/app/ReflectMetadataClientComponent";
 import ThemeRegistry from "@/app/ThemeRegistry";
 import type {Metadata} from 'next'
 import {Inter} from 'next/font/google'
@@ -24,6 +25,7 @@ export default function RootLayout(
       </head>
 
       <body className={inter.className}>
+        <ReflectMetadataClientComponent />
         <AuthProvider>
           <ThemeRegistry options={{ key: "mui" }}>
             {children}

@@ -4,7 +4,7 @@ import {SessionProvider} from 'next-auth/react';
 import {ReactNode} from 'react';
 
 // 5 minute session interval check
-const REFRESH_SESSION_INTERVAL_SEC = (5 * 60) 
+const REFRESH_SESSION_INTERVAL_SEC = (5 * 60)
 
 export default function AuthProvider({children}: { children: ReactNode }) {
   return (
