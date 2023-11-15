@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import AuthProvider from "@/app/AuthProvider";
 import ReflectMetadataClientComponent from "@/app/ReflectMetadataClientComponent";
 import ThemeRegistry from "@/app/ThemeRegistry";

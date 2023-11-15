@@ -1,29 +1,11 @@
 "use client";
 
 import {ChildrenList} from "@/app/modules/children/components/ChildrenList";
+import {authedFetch} from "@/app/utilities/http/authedFetch";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Box from "@mui/material/Box";
 import {signIn, useSession} from "next-auth/react";
 import {useEffect, useState} from "react";
-
-async function authedFetch(
-  input: NodeJS.fetch.RequestInfo,
-  init?: RequestInit,
-): Promise<Response> {
-  const response = await fetch(input, init)
-  if (response.status == 401) {
-    const sessionResponse = await fetch("/api/auth/session?force_refresh=true")
-    if (sessionResponse.status >= 400 && sessionResponse.status <= 499) {
-      // todo(alex): do signout
-      throw "AuthError"
-    }
-
-    // replay initial request
-    return await authedFetch(input, init)
-  }
-
-  return response
-}
 
 export default function Home() {
   const [userState, setUserState] = useState({user: null})
@@ -49,9 +31,11 @@ export default function Home() {
       }
     }
 
-    (async () => {
-      await fetchMe()
-    })();
+    if (session.status == "authenticated") {
+      (async () => {
+        await fetchMe()
+      })();
+    }
     const intervalId = setInterval(async () => {
       if (session.status == "authenticated") {
         await fetchMe()

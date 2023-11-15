@@ -33,9 +33,6 @@ const auth = async (req: NextRequest, res: RouteHandlerContext) => {
   // something more than we do, so let's respect that, log it and perform
   // what it wants
   const clientForcedRefresh = req.nextUrl.searchParams.has("force_refresh")
-  if (clientForcedRefresh) {
-    console.log("reached auth with a client forced refresh")
-  }
 
   const authOptions: NextAuthOptions = {
     providers: [
@@ -60,16 +57,18 @@ const auth = async (req: NextRequest, res: RouteHandlerContext) => {
             refresh_token: account.refresh_token,
             expires_at: account.expires_at,
           }
-        } else if (Date.now() < token.expires_at * 1000) {
+        } else if (!clientForcedRefresh && Date.now() < token.expires_at * 1000) {
           // If the access token has not expired yet, return it
           console.log("returning access token as still valid")
           return token
         } else {
           // If the token has expired, try to refresh it
-          console.log("token has expired, attempting to refresh")
+          console.info("token has expired, attempting to refresh")
           try {
             const tokens = await refreshTokens(token.refresh_token)
             assertValidRefreshCredentials(tokens)
+
+            console.info("token refreshed successfully")
 
             return {
               // keep previous values, but update with token response
@@ -84,10 +83,10 @@ const auth = async (req: NextRequest, res: RouteHandlerContext) => {
             if (e instanceof Response
               && e.status >= 400
               && e.status <= 499) {
-              console.log(`encountered unrecoverable error (status: ${e.status})`)
+              console.error(`encountered unrecoverable error (status: ${e.status})`)
               throw "RefreshTokenError"
             } else {
-              console.log(`encountered recoverable error, try again (err: ${e})`)
+              console.warn(`encountered recoverable error, try again (err: ${e})`)
             }
           }
         }
@@ -125,11 +124,9 @@ const refreshTokens = async (refresh_token: string): Promise<RefreshCredentials>
   })
 
   const tokens: RefreshCredentials = await response.json()
-
   if (!response.ok) {
     throw response
   }
-
   return tokens
 }
 
