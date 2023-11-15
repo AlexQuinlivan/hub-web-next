@@ -1,33 +1,41 @@
 "use client";
 
 import {ChildrenList} from "@/app/modules/children/components/ChildrenList";
-import {authedFetch} from "@/app/utilities/http/authedFetch";
+import {AuthedHttpClient} from "@/app/utilities/http/HttpClient";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Box from "@mui/material/Box";
 import {signIn, useSession} from "next-auth/react";
 import {useEffect, useState} from "react";
+import {container} from "tsyringe";
 
+type User = {
+  id: string,
+  display_name: string
+}
+type UserResponse = {
+  user: User
+}
 export default function Home() {
-  const [userState, setUserState] = useState({user: null})
+  const [userState, setUserState] = useState<UserResponse | null>(null)
   const session = useSession()
+  const httpClient = container.resolve(AuthedHttpClient)
 
   useEffect(() => {
     async function fetchMe() {
       try {
-        const response = await authedFetch("/api/v3/users/me", {
-          headers: {
-            "Accept": "application/json",
-          },
-        })
+        const { data } = await httpClient.get<UserResponse>("/api/v3/users/me")
 
-        if (response.ok) {
-          setUserState({user: (await response.json()).user})
-        } else {
-          setUserState({user: null})
-          console.log(`Response not ok ${response.status}`)
-        }
+        setUserState(data)
       } catch (e) {
-        // Logout the user and redirect to the login page
+        if (e instanceof Response) {
+          if (e.status == 401) {
+            // Logout the user and redirect to the login page
+          } else {
+            // hmmm
+          }
+        } else {
+          /// uuuuuhhhhh
+        }
       }
     }
 
@@ -42,7 +50,7 @@ export default function Home() {
       }
     }, 5000) // in milliseconds
     return () => clearInterval(intervalId)
-  }, [session])
+  }, [session, httpClient])
 
   return (
     <main>

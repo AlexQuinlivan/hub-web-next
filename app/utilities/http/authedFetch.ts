@@ -1,5 +1,5 @@
 export async function authedFetch(
-  input: NodeJS.fetch.RequestInfo,
+  input: RequestInfo,
   init?: RequestInit,
 ): Promise<Response> {
   const response = await fetch(input, init)
